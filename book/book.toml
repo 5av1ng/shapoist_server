@@ -1,0 +1,6 @@
+[book]
+authors = ["5av1ng"]
+language = "en"
+multilingual = false
+src = "src"
+title = "shapoist"

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Admin</title>
+		<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+		<script src="https://unpkg.com/naive-ui"></script>
+	</head>
+	<body>
+		<!--不会还有人在 3202 年还在用 IE 吧-->
+		<!--你在这里看什么代码，这个网站是开源的去 github 上看啊（（-->
+		<!--(。﹏。)-->
+		<div id="app"><n-dialog-provider><n-message-provider><n-loading-bar-provider>
+			<!--极其 sb 的写法，只是为了少嵌套点-->
+			<n-layout position="absolute" style = "height: 100vh; width:100vw;">
+				<n-layout-header style="padding: 16px" bordered>
+					<n-space justify="end">
+						<n-button text>{{ message }}</n-button>
+					</n-space>
+				</n-layout-header>
+				<n-layout v-if = "!login_condition">
+					<n-space justify="center">
+						<n-card style="width: 400px;">
+							<n-tabs
+								class="card-tabs"
+								default-value="signin"
+								size="large"
+								animated
+								pane-wrapper-style="margin: 0 -4px"
+								pane-style="padding-left: 4px; padding-right: 4px; box-sizing: border-box;">
+								<n-tab-pane name="signin" tab="登录">
+									<n-form>
+										<n-form-item-row label="用户名">
+											<n-input placeholder="Shapoist Id / E-mail"></n-input>
+										</n-form-item-row>
+										<n-form-item-row label="密码">
+											<n-input placeholder="Password"></n-input>
+										</n-form-item-row>
+										<n-form-item-row>
+											<n-button block @click="login_condition = !login_condition">登录</n-button>
+										</n-form-item-row>
+									</n-form>
+								</n-tab-pane>
+								<n-tab-pane name="signup" tab="注册">
+									<n-form>
+										<n-form-item-row label="用户名">
+											<n-input placeholder="username"></n-input>
+										</n-form-item-row>
+										<n-form-item-row label="密码">
+											<n-input placeholder="Password"></n-input>
+										</n-form-item-row>
+										<n-form-item-row label="重复密码">
+											<n-input placeholder="Repeat Password"></n-input>
+										</n-form-item-row>
+										<n-form-item-row label="邮箱">
+											<n-input placeholder="E-mail"></n-input>
+										</n-form-item-row>
+										<n-form-item-row label="验证码">
+											<n-input placeholder="Confirmation Code"></n-input>
+											<n-button>获取验证码</n-button>
+										</n-form-item-row>
+										<n-form-item-row>
+											<n-button block @click="login_condition = !login_condition">注册</n-button>
+										</n-form-item-row>
+									</n-form>
+								</n-tab-pane>
+								<n-tab-pane name="forgetpass" tab = "忘记密码">
+									<n-form-item-row label="邮箱">
+											<n-input placeholder="E-mail"></n-input>
+										</n-form-item-row>
+										<n-form-item-row label="验证码">
+											<n-input placeholder="Confirmation Code"></n-input>
+											<n-button>获取验证码</n-button>
+										</n-form-item-row>
+										<n-form-item-row>
+											<n-button block @click="login_condition = !login_condition">找回密码</n-button>
+										</n-form-item-row>
+								</n-tab-pane>
+							</n-tabs>
+						</n-card>
+					</n-space>
+				</n-layout>
+				<n-layout v-if="login_condition" has-sider>
+					<n-layout-sider 
+					bordered 
+					style="height: calc(100vh - 32px - 2em);" 
+					:native-scrollbar="false"
+					:collapsed-width="64"
+					show-trigger>
+						<n-menu 
+						:options="menu_options" 
+						@update:value="handle_update"
+						:collapsed-width="64"
+						:collapsed-icon-size="22"
+						v-model:value="router_now"></n-menu>
+					</n-layout-sider>
+				</n-layout>
+			</n-layout>
+		</n-loading-bar-provider></n-message-provider></n-dialog-provider></div>
+	</body>
+	<script>
+	// 不想遵循 web 变量标准，问就是写 rust 写的
+	// 为什么这样不行
+	// let bian_liang: string = "123456789"
+	const { createApp, ref } = Vue
+
+	// 假装有类型限制
+	function new_menu_optin(label,key,children) {
+		return {
+			label: label,
+			key: key,
+			children: children
+		}
+	}
+
+	// let xxx = Vec::new()
+	// 假装这是枚举
+	const menu_label = ["主页", "用户管理", "资源管理", "路由管理", "服务器管理", "文档管理", "发布与修改", "子服务器管理", "反馈信息"]
+	const menu_key = ["main", "user", "resource", "router", "server", "doc", "publish", "subserver", "report"]
+	const user_menu_label =["在线用户", "用户列表", "权限组", "权限管理"]
+	const user_menu_key =["user_online", "user_list", "user_permission_group", "user_permission"]
+	const resource_menu_label =["音乐资源", "铺面资源", "插件资源", "待审核列表", "评论列表"]
+	const resource_menu_key =["resource_music", "resource_chart", "resource_plugin", "resource_unpublished_list", "resource_comment"]
+	const router_menu_label =["预制路由", "自定义路由"]
+	const router_menu_key =["router_preset", "router_custom"]
+	const server_menu_label =["日志", "管理"]
+	const server_menu_key =["server_log", "server_manage"]
+	const doc_menu_label =["自述文档", "api 文档", "布局文档"]
+	const doc_menu_key =["doc_self", "doc_api", "doc_layout"]
+	const publish_menu_label =["更新", "公告"]
+	const publish_menu_key =["publish_update", "publish_notice"]
+	const subserver_menu_label =["TODO"]
+	const subserver_menu_key =["subserver_todo"]
+
+	// let mut xxx = Vec::new()
+
+	let user_options = []
+	for (i=0;i < user_menu_label.length;i++){
+		user_options.push(new_menu_optin(user_menu_label[i],user_menu_key[i],null))
+	}
+	let resource_options = []
+	for (i=0;i < resource_menu_label.length;i++){
+		resource_options.push(new_menu_optin(resource_menu_label[i],resource_menu_key[i],null))
+	}
+	let router_options = []
+	for (i=0;i < router_menu_label.length;i++){
+		router_options.push(new_menu_optin(router_menu_label[i],router_menu_key[i],null))
+	}
+	let server_options = []
+	for (i=0;i < server_menu_label.length;i++){
+		server_options.push(new_menu_optin(server_menu_label[i],server_menu_key[i],null))
+	}
+	let doc_options = []
+	for (i=0;i < doc_menu_label.length;i++){
+		doc_options.push(new_menu_optin(doc_menu_label[i],doc_menu_key[i],null))
+	}
+	let publish_options = []
+	for (i=0;i < publish_menu_label.length;i++){
+		publish_options.push(new_menu_optin(publish_menu_label[i],publish_menu_key[i],null))
+	}
+	let subserver_options = []
+	for (i=0;i < subserver_menu_label.length;i++){
+		subserver_options.push(new_menu_optin(subserver_menu_label[i],subserver_menu_key[i],null))
+	}
+	let menu_options = []
+	let menu_child = [null, user_options, resource_options, router_options, server_options, doc_options, publish_options, subserver_options, null]
+	let router_now = ref("main")
+	for (i=0;i < menu_label.length;i++){
+		menu_options.push(new_menu_optin(menu_label[i],menu_key[i],menu_child[i]))
+	}
+
+	let app = createApp({
+		setup() {
+			let message = ref('主页');
+			let aaa = ref("aaaa");
+			let login_condition = ref(false);
+
+			function handle_update(key, item) {
+				// 用全局变量，坏！
+				// unsafe {
+					router_now = ref(key)
+				// }
+				console.log(key,item)
+			}
+
+			return {
+				message,
+				aaa,
+				login_condition,
+				menu_options,
+				handle_update,
+				router_now,
+			}
+		}
+	});
+	app.use(naive);
+	app.mount('#app');
+	</script>
+</html>4
