@@ -41,12 +41,13 @@ async fn main() {
 		Router::with_path("server").get(hello).push(Router::with_path("<request>").post(server))
 	).push(
 		Router::with_path("<**path>").get(
-			StaticDir::new(["admin", 
+			StaticDir::new(["admin",
+				"play",
 				"book/book", 
 				"data/info/update/nightly",
 				"data/info/update/stable",
 				"data/info/notice",
-				"data/source/chart"]).defaults("index.html").auto_list(true),
+				"data/source/chart"]).defaults("index.html"),
 		)
 	);
 	let acceptor = TcpListener::new("127.0.0.1:7878").bind().await;
